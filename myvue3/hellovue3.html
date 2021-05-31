@@ -1,0 +1,41 @@
+<div id="app">
+  <h3>{{title}}</h3>
+  <h3>{{state.title}}</h3>
+  <comp></comp>
+</div>
+
+<script src="http://unpkg.com/vue@next"></script>
+<script>
+  const {
+    createApp,
+    reactive
+  } = Vue
+  // new Vue
+  // 函数式：类型支持会好（ts），摇树优化（打包体积减小）
+  // 消灭静态方法（Vue.component...），变成实例方法  例如component如果没用，就不会被打包进去
+  // 以前在Vue.prototype里面做配置，会污染全局构造函数，现在可以创建多个实例不会互相污染，实例之间相互独立
+  // const app2 = createApp({})
+  // 全局配置可以通过app.config.globalProperties.XXX来实现
+  const app = createApp({
+    // 统一api，一致性
+    data() {
+      return {
+        title: 'hello, vue3!'
+      }
+    },
+    setup() {
+      const state = reactive({
+        title: 'vue3, hello'
+      })
+      return {
+        state
+      }
+    }
+  })
+  // 全局组件
+  app.component('comp', {
+    template: '<div>comp</div>'
+  })
+  // api简化、一致性更强
+  app.mount('#app')
+</script>

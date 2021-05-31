@@ -477,6 +477,7 @@ function baseCreateRenderer(
 
   // Note: functions inside this closure should use `const xxx = () => {}`
   // style in order to prevent being inlined by minifiers.
+  // 补丁算法：init,update
   const patch: PatchFn = (
     n1,
     n2,
@@ -501,6 +502,7 @@ function baseCreateRenderer(
     }
 
     const { type, ref, shapeFlag } = n2
+    // 现在虚拟dom节点里面拿出类型
     switch (type) {
       case Text:
         processText(n1, n2, container, anchor)
@@ -541,7 +543,8 @@ function baseCreateRenderer(
             slotScopeIds,
             optimized
           )
-        } else if (shapeFlag & ShapeFlags.COMPONENT) {
+        } else if (shapeFlag & ShapeFlags.COMPONENT) { // 第一次进来会走这
+          // 第一次传进来的是根组件：{data(){return xx}, setup(){ return {xx}}} ，将它渲染为一个dom
           processComponent(
             n1,
             n2,
@@ -1265,7 +1268,7 @@ function baseCreateRenderer(
     optimized: boolean
   ) => {
     n2.slotScopeIds = slotScopeIds
-    if (n1 == null) {
+    if (n1 == null) { // 第一次为null,走这
       if (n2.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE) {
         ;(parentComponent!.ctx as KeepAliveContext).activate(
           n2,
@@ -1275,7 +1278,7 @@ function baseCreateRenderer(
           optimized
         )
       } else {
-        mountComponent(
+        mountComponent( // 走这
           n2,
           container,
           anchor,
@@ -1290,6 +1293,10 @@ function baseCreateRenderer(
     }
   }
 
+  // 首次挂载做3件事
+  // 1. 根组件实例化
+  // 2. 初始化更组件
+  // 3. 安装render函数副作用
   const mountComponent: MountComponentFn = (
     initialVNode,
     container,
@@ -1302,6 +1309,7 @@ function baseCreateRenderer(
     // 2.x compat may pre-creaate the component instance before actually
     // mounting
     const compatMountInstance = __COMPAT__ && initialVNode.component
+    // 1. 根组件实例化
     const instance: ComponentInternalInstance =
       compatMountInstance ||
       (initialVNode.component = createComponentInstance(
@@ -1329,6 +1337,8 @@ function baseCreateRenderer(
       if (__DEV__) {
         startMeasure(instance, `init`)
       }
+      // 2. 根实例初始化，类似于vue2中this._init()
+      // 组件实例属性，选项的合并和处理
       setupComponent(instance)
       if (__DEV__) {
         endMeasure(instance, `init`)
@@ -1348,7 +1358,8 @@ function baseCreateRenderer(
       }
       return
     }
-
+    // 3. 初始化渲染函数副作用
+    // useEffect(fn, deps)
     setupRenderEffect(
       instance,
       initialVNode,
@@ -1410,6 +1421,15 @@ function baseCreateRenderer(
     optimized
   ) => {
     // create reactive effect for rendering
+    //! componentEffect === vue2 componentUpdate
+    //! effect(fn)：添加副作用函数，这样里面相关的响应式数据如果发生变化，那么fn会再次执行
+    //! 内部render函数的执行会触发依赖收集
+    //! 所以这个机制消除了vue2中的watcher
+    //! 和useEffect有啥区别？ 
+    //! React：useEffect(fn, [deps])
+    //! vue: 依赖是自动收集的
+    //! watch()：可以精确指定一个  相当于useEffect()
+    //! watchEffect()
     instance.update = effect(function componentEffect() {
       if (!instance.isMounted) {
         let vnodeHook: VNodeHook | null | undefined
@@ -1437,6 +1457,8 @@ function baseCreateRenderer(
             if (__DEV__) {
               startMeasure(instance, `render`)
             }
+            //! 执行render获取vnode
+            //! subTree就是虚拟dom
             instance.subTree = renderComponentRoot(instance)
             if (__DEV__) {
               endMeasure(instance, `render`)
@@ -1478,6 +1500,8 @@ function baseCreateRenderer(
           if (__DEV__) {
             startMeasure(instance, `patch`)
           }
+          //! 转换vnode为dom
+          //! 递归调用
           patch(
             null,
             subTree,
@@ -2372,6 +2396,7 @@ function baseCreateRenderer(
         unmount(container._vnode, null, null, true)
       }
     } else {
+      // 初始化的时候vnode是存在的，所以走这里
       patch(container._vnode || null, vnode, container, null, null, null, isSVG)
     }
     flushPostFlushCbs()
@@ -2400,8 +2425,11 @@ function baseCreateRenderer(
     >)
   }
 
+  // 渲染器
   return {
+    // 客户端渲染
     render,
+    // 注水，用于服务端渲染
     hydrate,
     createApp: createAppAPI(render, hydrate)
   }

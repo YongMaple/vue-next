@@ -162,7 +162,8 @@ export function createAppAPI<HostElement>(
     const installedPlugins = new Set()
 
     let isMounted = false
-
+    // createApp的核心作用就是为了创建应用程序实例
+    // 应用程序实例
     const app: App = (context.app = {
       _uid: uid++,
       _component: rootComponent as ConcreteComponent,
@@ -251,13 +252,14 @@ export function createAppAPI<HostElement>(
         context.directives[name] = directive
         return app
       },
-
+      // 外面调用的mount函数
       mount(
         rootContainer: HostElement,
         isHydrate?: boolean,
         isSVG?: boolean
       ): any {
         if (!isMounted) {
+          // 首先得到根组件的虚拟dom，然后将它转成真实dom（用的就是render，从外面传进来的）
           const vnode = createVNode(
             rootComponent as ConcreteComponent,
             rootProps
@@ -276,6 +278,7 @@ export function createAppAPI<HostElement>(
           if (isHydrate && hydrate) {
             hydrate(vnode as VNode<Node, Element>, rootContainer as any)
           } else {
+            // 首次渲染
             render(vnode, rootContainer, isSVG)
           }
           isMounted = true
