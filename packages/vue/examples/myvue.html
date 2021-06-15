@@ -1,8 +1,35 @@
 <div id="app">
   <h3>{{title}}</h3>
 </div>
-
+<script src="./reactive.js"></script>
 <script>
+  // const isObject = v => typeof v === 'object' && v !== null
+  // function reactive(obj) {
+  //   return new Proxy(obj, {
+  //     get(target, key) {
+  //       console.log('get', key)
+  //       // 1. 更加健壮，在此期间有什么异常，可以更好的捕获
+  //       // 2. 一定会返回一个结果，在这里return出去
+  //       // 既健壮又明确
+  //       const res = Reflect.get(target, key)
+  //       // 懒处理
+  //       return isObject(res) ? reactive(res) : res
+  //     },
+  //     set(target, key, val) {
+  //       console.log('set', key)
+  //       const res = Reflect.set(target, key, val)
+  //       app.update()
+  //       // 这里有个布尔值可以返回出去了，知道最终操作的结果了
+  //       return res
+  //     },
+  //     deleteProperty(target, key) {
+  //       console.log('delete prop', key)
+  //       const res = Reflect.deleteProperty(target, key)
+  //       app.update()
+  //       return res
+  //     }
+  //   })
+  // }
   // 基本结构
   const Vue = {
     createApp(options) {
@@ -58,10 +85,13 @@
               })
 
               // 渲染dom，追加到宿主元素
-              const el = options.render.call(this.proxy)
-              // Vue2中是先追加再删除原来的，Vue3直接清空再追加
-              parent.innerHTML = ''
-              insert(el, parent)
+              this.update = effect(() => {
+                const el = options.render.call(this.proxy)
+                // Vue2中是先追加再删除原来的，Vue3直接清空再追加
+                parent.innerHTML = ''
+                insert(el, parent)
+              })
+              // this.update() // init
             },
             compile(template) {
               // 返回render
@@ -90,9 +120,13 @@
       }
     },
     setup() {
-      return {
+      const state = reactive({
         title: 'vue3, hello!',
-      }
+      })
+      setTimeout(() => {
+        state.title = 'hello, hello, vue3'
+      }, 2000);
+      return state
     },
   })
   app.mount('#app')

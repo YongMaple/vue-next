@@ -953,6 +953,7 @@ function resolveData(
     )
   }
   shouldCacheAccess = false
+  //! dataFn: data() { return {}}
   const data = dataFn.call(publicThis, publicThis)
   shouldCacheAccess = true
   if (__DEV__ && isPromise(data)) {
@@ -965,6 +966,7 @@ function resolveData(
   if (!isObject(data)) {
     __DEV__ && warn(`data() should return an object.`)
   } else if (instance.data === EMPTY_OBJ) {
+    //! 最后还是reactive处理
     instance.data = reactive(data)
   } else {
     // existing data: this is a mixin or extends.

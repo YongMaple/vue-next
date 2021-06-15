@@ -608,6 +608,7 @@ function setupStatefulComponent(
 
     currentInstance = instance
     pauseTracking()
+    //! 执行setup
     const setupResult = callWithErrorHandling(
       setup,
       instance,
@@ -616,7 +617,7 @@ function setupStatefulComponent(
     )
     resetTracking()
     currentInstance = null
-
+    // 异步组件
     if (isPromise(setupResult)) {
       if (isSSR) {
         // return the promise so server-renderer can wait on it
@@ -783,6 +784,8 @@ export function finishComponentSetup(
   }
 
   // support for 2.x options
+  //! 最后依然会处理组件options
+  //! 兼容options api
   if (__FEATURE_OPTIONS_API__ && !(__COMPAT__ && skipOptions)) {
     currentInstance = instance
     pauseTracking()

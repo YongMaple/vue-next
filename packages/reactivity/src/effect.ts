@@ -60,7 +60,8 @@ export function effect<T = any>(
     fn = fn.raw
   }
   const effect = createReactiveEffect(fn, options)
-  if (!options.lazy) {
+  if (!options.lazy) {  // 计算属性中的lazy
+    //! 立刻执行，触发依赖收集
     effect()
   }
   return effect
@@ -246,7 +247,7 @@ export function trigger(
         oldTarget
       })
     }
-    if (effect.options.scheduler) {
+    if (effect.options.scheduler) { //! 计划任务
       effect.options.scheduler(effect)
     } else {
       effect()
